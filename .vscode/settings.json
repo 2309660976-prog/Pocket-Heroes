@@ -1,0 +1,30 @@
+{
+  // ===== 代码显示区域放大 =====
+
+  // 整体界面缩放（Ctrl +/- 亦可实时调节）
+  "window.zoomLevel": 1,
+
+  // 代码字体与行高：字更大、行更宽松，阅读更舒适
+  "editor.fontSize": 16,
+  "editor.fontFamily": "'Cascadia Code', 'Consolas', 'Courier New', monospace",
+  "editor.lineHeight": 20,
+  "editor.letterSpacing": 0.5,
+
+  // 隐藏右侧小地图，给代码腾出水平空间
+  "editor.minimap.enabled": false,
+
+  // 开启自动换行，避免长代码横向滚动
+  "editor.wordWrap": "on",
+
+  // 隐藏顶部面包屑导航，让出更多垂直空间
+  "breadcrumbs.enabled": false,
+
+  // 收紧界面冗余元素
+  "editor.renderWhitespace": "none",
+  "editor.glyphMargin": false,
+  "editor.scrollbar.verticalScrollbarSize": 10,
+  "editor.overviewRulerBorder": false,
+
+  // 隐藏底部状态栏，进一步扩大代码区域
+  "workbench.statusBar.visible": false
+}

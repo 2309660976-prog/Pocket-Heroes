@@ -3,16 +3,17 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "D:\\SFML-3.1.0-windows-gcc-14.2.0-mingw-64-bit (1)\\SFML-3.1.0\\include"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "D:\\msys2\\ucrt64\\bin\\gcc.exe",
+            "compilerPath": "D:\\msys2\\ucrt64\\bin\\g++.exe",
             "cStandard": "c17",
-            "cppStandard": "gnu++20",
+            "cppStandard": "c++17",
             "intelliSenseMode": "windows-gcc-x64"
         }
     ],

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>章节背景 · 连续预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e8e2ce;color:#493b2d;font:15px "Microsoft YaHei",sans-serif}header{padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}h1{font-size:22px;margin:0 0 8px}p{margin:0;font-size:13px}.controls{display:flex;gap:10px}select,button{font:inherit;padding:10px;background:#f5edda;border:1px solid #9c8d70;border-radius:6px;color:inherit;cursor:pointer}main{overflow-x:auto;touch-action:pan-x;cursor:grab}main.dragging{cursor:grabbing}#strip{position:relative;height:600px;isolation:isolate}.tile{position:absolute;top:0;width:1200px;height:600px;object-fit:contain;mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent);pointer-events:none;user-select:none}.ground{position:absolute;top:0;height:600px;pointer-events:none}.name{position:absolute;top:15px;z-index:4;background:#eee5cde8;border-radius:6px;padding:8px 12px;white-space:nowrap}.join{position:absolute;top:0;z-index:3;pointer-events:none}footer{padding:16px 28px;font-size:13px}#checks{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px}.card{background:#f5edda;border-radius:7px;overflow:hidden}.card h2{font-size:14px;margin:10px}.window{height:300px;overflow:hidden;position:relative}.mini{position:absolute;top:0;transform:scale(.5);transform-origin:top left;height:600px}.review main{display:none}.review #checks{display:grid}.review header p{max-width:640px}@media(max-width:850px){header{align-items:start;flex-direction:column}#checks{grid-template-columns:1fr}.window{height:300px}}
+</style></head><body>
+<header><div><h1>章节背景 · 连续预览</h1><p>沿一条路从第二章到第十二章 · 拖动或滚轮浏览 · 桥只用于必要跨越</p></div><div class="controls"><select id="jump" aria-label="选择章节"></select><button id="review" type="button">检查全部接缝</button></div></header>
+<main id="viewport" tabindex="0" aria-label="横向连续地图"><div id="strip"></div></main><section id="checks" aria-label="十处章间接缝检查"></section>
+<footer>背景图保留各章景物；连接段按图片实际路口高度、宽度、颜色与切线适配。关卡节点尚未接入，此页面不是战斗系统。</footer>
+<script>
+const maps=[{"chapter":2,"name":"狼嚎谷","file":"chapter-02-wolf.png","left":{"y":0.475761,"width":0.034949,"fill":"#f2bc81","slope":0.0625,"ground":["#92c455","#92c454","#84bb53","#7fb953","#91c455","#92c555"]},"right":{"y":0.51522,"width":0.034949,"fill":"#f4bc82","slope":0.05,"ground":["#7c9a5e","#7b995d","#7a995c","#7b995d","#7b9a5e","#7b9a5e"]},"start":"#8fbf68","end":"#81976a","size":[1774,887]},{"chapter":3,"name":"哥布林石窟","file":"chapter-03-goblin.png","left":{"y":0.457723,"width":0.041714,"fill":"#fac489","slope":-0.0625,"ground":["#8ca465","#7a9662","#7b9662","#859545","#889645","#7b6d64"]},"right":{"y":0.514092,"width":0.037204,"fill":"#f9c183","slope":0,"ground":["#afa462","#afa563","#a9a162","#ada462","#392a0e","#7b6b61"]},"start":"#81976a","end":"#a6a078","size":[1774,887]},{"chapter":4,"name":"海防旧关","file":"chapter-04-pass.png","left":{"y":0.445885,"width":0.038331,"fill":"#f5c392","slope":0.025,"ground":["#b4a26a","#a39768","#b5a26a","#9f9465","#a89e6c","#a79c6a"]},"right":{"y":0.554679,"width":0.032694,"fill":"#f4c08e","slope":0.05,"ground":["#7fb5a9","#7eb5aa","#ecd09e","#928382","#c6e0dc","#7eb4a9"]},"start":"#a6a078","end":"#96b4a8","size":[1774,887]},{"chapter":5,"name":"盐港迷雾","file":"chapter-05-harbor.png","left":{"y":0.316234,"width":0.060879,"fill":"#f3bf84","slope":0.3625,"ground":["#89b9aa","#76b1a3","#2d0f07","#2cb3e0","#82b6aa","#81b7ac"]},"right":{"y":0.488726,"width":0.05186,"fill":"#f6bd80","slope":0.0125,"ground":["#2cb7e4","#2cb9e6","#dfc9b7","#2cb8e5","#2eb8e5","#2bb7e5"]},"start":"#96b4a8","end":"#74a9ad","size":[1774,887]},{"chapter":6,"name":"海盗黑帆","file":"chapter-06-pirate.png","left":{"y":0.357384,"width":0.023675,"fill":"#fbd483","slope":0.0375,"ground":["#31acb9","#5cbd61","#fcd684","#35afbb","#35afbb","#35b0bc"]},"right":{"y":0.435738,"width":0.027057,"fill":"#fdd684","slope":0,"ground":["#e2dbc8","#ebe5d5","#e5dfce","#fdfbef","#e2d9c8","#ece6d6"]},"start":"#74a9ad","end":"#c8c5a1","size":[1774,887]},{"chapter":7,"name":"沉船荒岛","file":"chapter-07-island.png","left":{"y":0.453777,"width":0.042841,"fill":"#f8c284","slope":0,"ground":["#dfcea4","#decda3","#fce7bc","#45cacf","#38c2cb","#31bcc9"]},"right":{"y":0.512965,"width":0.034949,"fill":"#efd39f","slope":-0.0125,"ground":["#84a575","#eed49e","#80a475","#96ab7a","#7b7b89","#30bac7"]},"start":"#c8c5a1","end":"#91aa85","size":[1774,887]},{"chapter":8,"name":"骨面芦泽","file":"chapter-08-marsh.png","left":{"y":0.441939,"width":0.048478,"fill":"#d6b182","slope":0,"ground":["#92aa6e","#809969","#819969","#91a96d","#90a96d","#92aa6d"]},"right":{"y":0.48478,"width":0.043968,"fill":"#d3b082","slope":0.0125,"ground":["#9b988e","#918f81","#928f82","#938f82","#9d9a90","#9e9b90"]},"start":"#91aa85","end":"#a6a59f","size":[1774,887]},{"chapter":9,"name":"月影古城","file":"chapter-09-ruins.png","left":{"y":0.419391,"width":0.043968,"fill":"#e7b683","slope":-0.05,"ground":["#969595","#959595","#969595","#959494","#89819a","#959594"]},"right":{"y":0.447012,"width":0.042841,"fill":"#e5b47e","slope":0.05,"ground":["#a58f69","#b19a6d","#b29b6e","#b19a6d","#8c829d","#b0996c"]},"start":"#a6a59f","end":"#b4a77d","size":[1774,887]},{"chapter":10,"name":"假旗商路","file":"chapter-10-caravan.png","left":{"y":0.434047,"width":0.043968,"fill":"#fac489","slope":0.0625,"ground":["#b59652","#b69652","#bfa564","#b89853","#b79854","#b79956"]},"right":{"y":0.601466,"width":0.042841,"fill":"#fcc386","slope":-0.0125,"ground":["#9b9f8f","#9a9f8f","#9ca190","#9ea18d","#959b8f","#979e8e"]},"start":"#b4a77d","end":"#aab0a0","size":[1774,887]},{"chapter":11,"name":"最后山口","file":"chapter-11-snow.png","left":{"y":0.462232,"width":0.034949,"fill":"#ebc399","slope":0,"ground":["#a4aea5","#a5afa6","#a6b0a8","#c2ddf7","#a5afa7","#a4aea5"]},"right":{"y":0.471815,"width":0.036077,"fill":"#ebc297","slope":-0.05,"ground":["#c0c7c0","#c0c8c0","#c6cec7","#c0c8c0","#c1c9c1","#9fa8aa"]},"start":"#aab0a0","end":"#c5ccbf","size":[1774,887]},{"chapter":12,"name":"王冠之前","file":"chapter-12-royal.png","left":{"y":0.419391,"width":0.034949,"fill":"#f0c080","slope":0.0125,"ground":["#bdc0ac","#bcc0ac","#bdc1ad","#cbbaa7","#bec1ad","#bec1ad"]},"right":{"y":0.607103,"width":0.038331,"fill":"#f1c181","slope":0.0125,"ground":["#e3d5b0","#cab8a5","#dccca8","#e5d5b1","#e6d7b5","#e3d4b1"]},"start":"#c5ccbf","end":"#ded6b9","size":[1774,887]}];
+const W=1200,H=600,GAP=160,STEP=W+GAP,OVERLAP=40,NS='http://www.w3.org/2000/svg';
+const strip=document.getElementById('strip'),vp=document.getElementById('viewport'),jump=document.getElementById('jump'),joins=[];
+function svgEl(tag,attrs={}){const n=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;}
+strip.style.width=(maps.length*STEP-GAP)+'px';
+maps.forEach((m,i)=>{
+ // 原图按2:1等比缩小，边缘仅做12px柔化，不再放大局部图块。
+ const base=document.createElement('div');base.className='ground';base.style.cssText='left:'+i*STEP+'px;width:'+W+'px;background:linear-gradient(90deg,'+m.left.ground[2]+','+m.right.ground[2]+')';strip.append(base);
+ const img=document.createElement('img');img.className='tile';img.src='../src/assets/maps/'+m.file;img.alt='第'+m.chapter+'章 '+m.name;img.draggable=false;img.style.left=i*STEP+'px';strip.append(img);
+ const label=document.createElement('div');label.className='name';label.style.left=(i*STEP+24)+'px';label.textContent='CH'+m.chapter+' · '+m.name;strip.append(label);
+ const option=document.createElement('option');option.value=i;option.textContent=label.textContent;jump.append(option);
+});
+maps.slice(0,-1).forEach((m,i)=>{
+ const next=maps[i+1],a=m.right,b=next.left,L=GAP+OVERLAP*2;
+ const svg=svgEl('svg',{width:L,height:H,viewBox:'0 0 '+L+' '+H,class:'join','data-seam':i});svg.style.left=(i*STEP+W-OVERLAP)+'px';
+ const defs=svgEl('defs');
+ // 连接地貌在图片内部开始柔化，避免只在图外填一个硬直的竖条。
+ const edgeGradient=svgEl('linearGradient',{id:'edge-'+i});
+ for(const [offset,color] of [[0,'black'],[OVERLAP/L*100,'white'],[(1-OVERLAP/L)*100,'white'],[100,'black']])edgeGradient.append(svgEl('stop',{offset:offset+'%','stop-color':color}));
+ defs.append(edgeGradient);const edgeMask=svgEl('mask',{id:'edge-mask-'+i});edgeMask.append(svgEl('rect',{width:L,height:H,fill:'url(#edge-'+i+')'}));defs.append(edgeMask);
+ // 按两张图片边缘的纵向颜色采样混合地貌，避免原先单色竖条和凭空出现的木桥。
+ for(const[side,colors]of [['l',a.ground],['r',b.ground]]){
+  const grad=svgEl('linearGradient',{id:'terrain-'+i+side,x1:0,y1:0,x2:0,y2:1,gradientUnits:'objectBoundingBox'});
+  colors.forEach((color,j)=>grad.append(svgEl('stop',{offset:(j/(colors.length-1)*100)+'%','stop-color':color})));defs.append(grad);
+ }
+ const maskGrad=svgEl('linearGradient',{id:'blend-'+i});maskGrad.append(svgEl('stop',{offset:0,'stop-color':'black'}),svgEl('stop',{offset:'100%','stop-color':'white'}));defs.append(maskGrad);
+ const mask=svgEl('mask',{id:'blend-mask-'+i});mask.append(svgEl('rect',{width:L,height:H,fill:'url(#blend-'+i+')'}));defs.append(mask);
+ const fill=svgEl('linearGradient',{id:'road-'+i});fill.append(svgEl('stop',{offset:0,'stop-color':a.fill}),svgEl('stop',{offset:'100%','stop-color':b.fill}));defs.append(fill);svg.append(defs);
+ const terrain=svgEl('g',{mask:'url(#edge-mask-'+i+')'});
+ terrain.append(svgEl('rect',{width:L,height:H,fill:'url(#terrain-'+i+'l)'}),svgEl('rect',{width:L,height:H,fill:'url(#terrain-'+i+'r)',mask:'url(#blend-mask-'+i+')'}));
+ // 少量不规则色块延续简笔画地面纹理，不把过渡带变成新的复杂场景。
+ terrain.append(svgEl('path',{d:'M0 92 Q58 63 101 98 T240 104 L240 154 Q169 174 111 143 T0 155Z',fill:a.ground[1],opacity:.28}),svgEl('path',{d:'M0 461 Q64 420 126 465 T240 454 L240 511 Q161 544 110 510 T0 526Z',fill:b.ground[4],opacity:.25}));svg.append(terrain);
+ // 将采样线（原图内3px处）投影到实际叠加位置，中心和边线一起衔接，不再只连一根估算中线。
+ const scale=H/m.size[1],sampleInset=3*scale;
+ const ay=a.y*H-a.slope*(OVERLAP-sampleInset),by=b.y*H+b.slope*(OVERLAP-sampleInset);
+ const wa=a.width*H/2,wb=b.width*H/2,t=L*.36;
+ const top=[ay-wa,by-wb],bottom=[ay+wa,by+wb];
+ const d='M0 '+top[0]+' C'+t+' '+(top[0]+a.slope*t)+' '+(L-t)+' '+(top[1]-b.slope*t)+' '+L+' '+top[1]+' L'+L+' '+bottom[1]+' C'+(L-t)+' '+(bottom[1]-b.slope*t)+' '+t+' '+(bottom[0]+a.slope*t)+' 0 '+bottom[0]+' Z';
+ const road=svgEl('path',{d,fill:'url(#road-'+i+')',stroke:'#4b3425','stroke-width':2,'stroke-linejoin':'round','data-road':i});svg.append(road);
+ // 数笔砂粒提示土路质感；章间均为陆地缓坡，不添加任何桥板或栏杆。
+ for(const f of [.28,.63,.81]){const y=ay+(by-ay)*(f*f*(3-2*f));svg.append(svgEl('ellipse',{cx:L*f,cy:y,rx:1.5,ry:1,fill:'#b48b5f',opacity:.45}));}
+ joins.push({index:i,from:m.chapter,to:next.chapter,ay,by,widthA:wa*2,widthB:wb*2,slopeA:a.slope,slopeB:b.slope});strip.append(svg);
+});
+// 接缝巡检复用实际渲染层，十处都能查看；不是另画一套示意图掩盖断路。
+const checks=document.getElementById('checks');
+joins.forEach((seam,i)=>{
+ const card=document.createElement('article');card.className='card';const h=document.createElement('h2');h.textContent='CH'+seam.from+' → CH'+seam.to;card.append(h);
+ const windowEl=document.createElement('div');windowEl.className='window';const clone=strip.cloneNode(true);clone.removeAttribute('id');clone.className='mini';clone.style.left=(-(i*STEP+W-250)*.5)+'px';
+ // 巡检卡片独立命名渐变和遮罩，防止引用被隐藏的主地图资源后出现白色断带。
+ clone.querySelectorAll('[id]').forEach(n=>n.id+='-card'+i);
+ clone.querySelectorAll('[fill],[mask]').forEach(n=>{for(const key of ['fill','mask']){const value=n.getAttribute(key);if(value?.includes('url(#'))n.setAttribute(key,value.replace(/url\(#([^)]*)\)/g,(_,id)=>'url(#'+id+'-card'+i+')'));}});
+ windowEl.append(clone);card.append(windowEl);checks.append(card);
+});
+function review(on){document.body.classList.toggle('review',on);document.getElementById('review').textContent=on?'返回连续地图':'检查全部接缝';}
+document.getElementById('review').onclick=()=>review(!document.body.classList.contains('review'));
+jump.onchange=()=>{review(false);vp.scrollTo({left:Number(jump.value)*STEP,behavior:'smooth'});};
+vp.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){vp.scrollLeft+=e.deltaY*(e.deltaMode===1?16:1);e.preventDefault();}},{passive:false});
+let down=false,x=0,start=0;vp.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;down=true;x=e.clientX;start=vp.scrollLeft;vp.setPointerCapture(e.pointerId);vp.classList.add('dragging');e.preventDefault();});vp.addEventListener('pointermove',e=>{if(down)vp.scrollLeft=start+x-e.clientX;});function release(){down=false;vp.classList.remove('dragging');}vp.addEventListener('pointerup',release);vp.addEventListener('pointercancel',release);
+vp.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();vp.scrollBy({left:e.key==='ArrowRight'?300:-300,behavior:'smooth'});}});
+const query=new URLSearchParams(location.search);if(query.get('view')==='seams')review(true);if(query.has('seam'))vp.scrollLeft=Number(query.get('seam'))*STEP+W-vp.clientWidth/2+GAP/2;
+window.mapSeamState={maps,joins,step:STEP};
+</script></body></html>

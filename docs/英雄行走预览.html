@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>英雄行走预览</title>
+<style>
+body{margin:0;background:#eee6d1;color:#403a30;font:16px system-ui,"Microsoft YaHei",sans-serif}main{max-width:980px;margin:28px auto;padding:0 20px}h1{font-size:24px}p{line-height:1.7}button,select,input{font:inherit}button,select{padding:8px 14px;border:1px solid #8a8068;border-radius:8px;background:#fff9e9;color:inherit;cursor:pointer}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}canvas{display:block;width:100%;border-radius:12px;background:#b8c59b;border:1px solid #938e6d}a{color:#534b30}details{margin:20px 0}details img{max-width:100%;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/20px 20px}.note{font-size:14px}
+</style>
+<main>
+<h1>沈砚 · 左右行走</h1>
+<p>只播放左右两个方向。可以切换原地迈步与往返移动，观察脚步、衣摆和装备。</p>
+<div class="controls"><button id="play">暂停</button><select id="direction" aria-label="方向"><option value="right">向右</option><option value="left">向左</option></select><label><input id="travel" type="checkbox" checked>往返移动</label><label>速度 <input id="fps" type="range" min="3" max="10" value="6"><span id="rate">6</span> 帧/秒</label></div>
+<canvas id="stage" width="960" height="400" aria-label="沈砚行走动画预览"></canvas>
+<p id="status" class="note">正在加载图片……</p>
+<p class="note">这是第一位英雄的动作样例；尚未接入游戏。换脚、左右装备位置与帧间稳定性仍需人工校正。</p>
+<details><summary>查看动作图</summary><p><a href="../src/assets/heroes/shen-yan-walk.png">打开透明 PNG</a></p><img src="../src/assets/heroes/shen-yan-walk.png" alt="沈砚左右行走，两行四列"></details>
+</main>
+<script>
+// 每格保持相同裁剪大小，防止随轮廓缩放而造成角色忽大忽小。
+const image=new Image(),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+const play=document.querySelector('#play'),direction=document.querySelector('#direction'),travel=document.querySelector('#travel'),fps=document.querySelector('#fps');
+let running=true,loaded=false,frame=0,elapsed=0,last=0,x=480,facing=1;
+play.onclick=()=>{running=!running;play.textContent=running?'暂停':'播放'};
+direction.onchange=()=>{facing=direction.value==='right'?1:-1;frame=0};
+fps.oninput=()=>document.querySelector('#rate').textContent=fps.value;
+image.onload=()=>{loaded=true;document.querySelector('#status').textContent=`已加载 ${image.naturalWidth}×${image.naturalHeight}，上排向左、下排向右，各四帧。`;};
+image.onerror=()=>{document.querySelector('#status').textContent='图片未加载，请保留预览页面与素材在项目中的目录位置。'};
+image.src='../src/assets/heroes/shen-yan-walk.png';
+function draw(now){
+  const dt=last?Math.min((now-last)/1000,.05):0;last=now;
+  if(loaded){
+    if(running){elapsed+=dt;const period=1/Number(fps.value);while(elapsed>=period){frame=(frame+1)%4;elapsed-=period;}
+      if(travel.checked){x+=facing*Number(fps.value)*16*dt;if(x>825){x=825;facing=-1}if(x<135){x=135;facing=1}direction.value=facing>0?'right':'left';}}
+    ctx.clearRect(0,0,960,400);ctx.fillStyle='#b8c59b';ctx.fillRect(0,0,960,400);
+    // 场景只提供地面参照；画面中的角色直接取自 PNG，没有用静态图左右摇晃代替迈步。
+    ctx.fillStyle='#cbb38a';ctx.fillRect(0,300,960,70);ctx.strokeStyle='#a9926b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,370);ctx.lineTo(960,370);ctx.stroke();
+    const cw=image.naturalWidth/4,ch=image.naturalHeight/2,row=facing>0?1:0;
+    const dh=290,dw=cw/ch*dh;ctx.drawImage(image,frame*cw,row*ch,cw,ch,x-dw/2,70,dw,dh);
+    canvas.dataset.frame=String(frame);canvas.dataset.direction=direction.value;
+  }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</html>

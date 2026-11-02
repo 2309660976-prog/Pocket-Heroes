@@ -18,6 +18,8 @@
 .\build\PocketHeroes.exe
 ```
 
+也可以在资源管理器中双击 `build\PocketHeroes.exe`。游戏采用 Windows 图形程序模式，不会另外弹出命令提示符；从 PowerShell 启动时，原来的 PowerShell 窗口仍会保持打开。
+
 脚本已经根据当前电脑上的安装位置配置了默认值。以后移动 SFML 或更换编译器时，可以这样指定路径：
 
 ```powershell

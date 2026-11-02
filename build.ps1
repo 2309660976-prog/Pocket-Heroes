@@ -39,6 +39,8 @@ $compilerArguments = @(
     "-Wall",
     "-Wextra",
     "-pedantic",
+    # Windows GUI 子系统不为游戏程序额外创建命令提示符窗口。
+    "-mwindows",
     "-I$SfmlRoot\include",
     (Join-Path $PSScriptRoot "src\main.cpp"),
     (Join-Path $PSScriptRoot "src\Game.cpp"),

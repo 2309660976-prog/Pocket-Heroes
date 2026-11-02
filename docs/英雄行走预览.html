@@ -4,39 +4,72 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>英雄行走预览</title>
 <style>
-body{margin:0;background:#eee6d1;color:#403a30;font:16px system-ui,"Microsoft YaHei",sans-serif}main{max-width:980px;margin:28px auto;padding:0 20px}h1{font-size:24px}p{line-height:1.7}button,select,input{font:inherit}button,select{padding:8px 14px;border:1px solid #8a8068;border-radius:8px;background:#fff9e9;color:inherit;cursor:pointer}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}canvas{display:block;width:100%;border-radius:12px;background:#b8c59b;border:1px solid #938e6d}a{color:#534b30}details{margin:20px 0}details img{max-width:100%;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/20px 20px}.note{font-size:14px}
+body{margin:0;background:#eee6d1;color:#403a30;font:16px system-ui,"Microsoft YaHei",sans-serif}main{max-width:980px;margin:28px auto;padding:0 20px}h1{font-size:24px}p{line-height:1.7}button,select,input{font:inherit}button,select{padding:8px 14px;border:1px solid #8a8068;border-radius:8px;background:#fff9e9;color:inherit;cursor:pointer}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}canvas{display:block;width:100%;border-radius:12px;background:#b8c59b;border:1px solid #938e6d}a{color:#534b30}details{margin:20px 0}details img{max-width:100%;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/20px 20px}.note{font-size:14px}.roster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{min-width:0;text-align:center}.card button{display:block;margin:8px auto}.card canvas{width:100%;height:auto}.card a{font-size:13px}@media(max-width:650px){.roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <main>
-<h1>沈砚 · 左右行走</h1>
+<h1>英雄 · 左右行走</h1>
 <p>只播放左右两个方向。可以切换原地迈步与往返移动，观察脚步、衣摆和装备。</p>
-<div class="controls"><button id="play">暂停</button><select id="direction" aria-label="方向"><option value="right">向右</option><option value="left">向左</option></select><label><input id="travel" type="checkbox" checked>往返移动</label><label>速度 <input id="fps" type="range" min="3" max="10" value="6"><span id="rate">6</span> 帧/秒</label></div>
-<canvas id="stage" width="960" height="400" aria-label="沈砚行走动画预览"></canvas>
+<div class="controls"><select id="hero" aria-label="英雄"></select><button id="play">暂停</button><select id="direction" aria-label="方向"><option value="right">向右</option><option value="left">向左</option></select><label><input id="travel" type="checkbox" checked>往返移动</label><label>速度 <input id="fps" type="range" min="3" max="10" value="6"><span id="rate">6</span> 帧/秒</label></div>
+<canvas id="stage" width="960" height="400" aria-label="英雄行走动画预览"></canvas>
 <p id="status" class="note">正在加载图片……</p>
-<p class="note">这是第一位英雄的动作样例；尚未接入游戏。换脚、左右装备位置与帧间稳定性仍需人工校正。</p>
-<details><summary>查看动作图</summary><p><a href="../src/assets/heroes/shen-yan-walk.png">打开透明 PNG</a></p><img src="../src/assets/heroes/shen-yan-walk.png" alt="沈砚左右行走，两行四列"></details>
+<p class="note">八位英雄的动作草案，尚未接入游戏。可在下方对照；换脚、装备固定侧与帧间稳定性仍需游戏内检查。</p>
+<div class="roster" id="roster"></div>
+<details><summary>查看当前英雄的动作图</summary><p><a id="sheet-link" href="../src/assets/heroes/shen-yan-walk.png">打开透明 PNG</a></p><img id="sheet" src="../src/assets/heroes/shen-yan-walk.png" alt="左右行走，两行四列"></details>
 </main>
 <script>
-// 每格保持相同裁剪大小，防止随轮廓缩放而造成角色忽大忽小。
-const image=new Image(),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
-const play=document.querySelector('#play'),direction=document.querySelector('#direction'),travel=document.querySelector('#travel'),fps=document.querySelector('#fps');
-let running=true,loaded=false,frame=0,elapsed=0,last=0,x=480,facing=1;
+// 一位英雄对应一张两行四列图片；使用实际尺寸计算格子，避免硬编码缩放尺寸。
+const catalog=[['shen-yan','沈砚'],['yue-lan','岳岚'],['lin-di','林荻'],['gu-lu','咕鲁'],['a-shuo','阿朔'],['ma-lin','玛琳'],['wen-xi','闻溪'],['i-leya','伊蕾娅']];
+// 与 walk-atlas.json 保持一致，内嵌元数据使页面在本地直接打开时也能读取，不依赖本地文件 fetch。
+const atlas={"columns":4,"rows":2,"nominalCell":[384,512],"directions":["left","right"],"heroes":{"a-shuo":{"file":"a-shuo-walk.png","size":[1536,1024],"frames":[{"rect":[65,91,288,362],"origin":[127,360]},{"rect":[464,86,263,365],"origin":[112,363]},{"rect":[835,97,274,355],"origin":[125,353]},{"rect":[1212,88,266,363],"origin":[132,361]},{"rect":[44,572,294,368],"origin":[148,366]},{"rect":[437,571,267,368],"origin":[139,366]},{"rect":[809,571,283,369],"origin":[151,367]},{"rect":[1203,572,268,366],"origin":[141,364]}]},"gu-lu":{"file":"gu-lu-walk.png","size":[1536,1024],"frames":[{"rect":[34,100,325,394],"origin":[158,392]},{"rect":[430,101,293,392],"origin":[146,390]},{"rect":[798,100,332,394],"origin":[162,392]},{"rect":[1199,100,306,393],"origin":[145,391]},{"rect":[34,558,345,396],"origin":[158,394]},{"rect":[437,558,298,395],"origin":[139,393]},{"rect":[794,557,339,397],"origin":[166,395]},{"rect":[1179,557,322,396],"origin":[165,394]}]},"i-leya":{"file":"i-leya-walk.png","size":[1536,1024],"frames":[{"rect":[62,139,286,341],"origin":[130,339]},{"rect":[499,138,222,342],"origin":[77,340]},{"rect":[823,138,292,343],"origin":[137,341]},{"rect":[1271,139,214,341],"origin":[73,339]},{"rect":[55,613,294,346],"origin":[137,344]},{"rect":[454,612,209,348],"origin":[122,346]},{"rect":[811,613,298,347],"origin":[149,345]},{"rect":[1221,612,224,348],"origin":[123,346]}]},"lin-di":{"file":"lin-di-walk.png","size":[1536,1024],"frames":[{"rect":[39,20,338,464],"origin":[153,462]},{"rect":[455,23,256,460],"origin":[121,458]},{"rect":[797,22,335,462],"origin":[163,460]},{"rect":[1196,23,276,460],"origin":[148,458]},{"rect":[25,518,347,460],"origin":[167,458]},{"rect":[450,520,258,460],"origin":[126,458]},{"rect":[799,517,337,460],"origin":[161,458]},{"rect":[1230,520,271,460],"origin":[114,458]}]},"ma-lin":{"file":"ma-lin-walk.png","size":[1536,1024],"frames":[{"rect":[68,109,254,353],"origin":[124,351]},{"rect":[496,106,199,357],"origin":[80,355]},{"rect":[831,106,256,357],"origin":[129,355]},{"rect":[1261,104,202,359],"origin":[83,357]},{"rect":[47,607,279,346],"origin":[145,344]},{"rect":[447,602,217,351],"origin":[129,349]},{"rect":[831,602,264,351],"origin":[129,349]},{"rect":[1214,602,219,351],"origin":[130,349]}]},"shen-yan":{"file":"shen-yan-walk.png","size":[1536,1024],"frames":[{"rect":[68,16,293,470],"origin":[124,468]},{"rect":[474,16,199,468],"origin":[102,466]},{"rect":[794,16,289,471],"origin":[166,469]},{"rect":[1230,15,209,471],"origin":[114,469]},{"rect":[68,509,305,470],"origin":[124,468]},{"rect":[478,508,197,471],"origin":[98,469]},{"rect":[813,510,303,470],"origin":[147,468]},{"rect":[1226,509,205,470],"origin":[118,468]}]},"wen-xi":{"file":"wen-xi-walk.png","size":[1536,1024],"frames":[{"rect":[45,40,313,441],"origin":[147,439]},{"rect":[451,37,256,449],"origin":[125,447]},{"rect":[793,44,302,441],"origin":[167,439]},{"rect":[1229,39,253,447],"origin":[115,445]},{"rect":[46,530,317,438],"origin":[146,436]},{"rect":[435,530,252,441],"origin":[141,439]},{"rect":[800,536,326,433],"origin":[160,431]},{"rect":[1213,529,235,442],"origin":[131,440]}]},"yue-lan":{"file":"yue-lan-walk.png","size":[1536,1024],"frames":[{"rect":[54,55,342,434],"origin":[138,432]},{"rect":[416,53,330,434],"origin":[160,432]},{"rect":[794,54,346,437],"origin":[166,435]},{"rect":[1180,53,330,434],"origin":[164,432]},{"rect":[20,548,343,426],"origin":[172,424]},{"rect":[408,544,340,426],"origin":[168,424]},{"rect":[787,545,346,428],"origin":[173,426]},{"rect":[1171,545,335,425],"origin":[173,423]}]}}};
+const canvas=document.querySelector('#stage'),ctx=canvas.getContext('2d');
+const play=document.querySelector('#play'),direction=document.querySelector('#direction'),travel=document.querySelector('#travel'),fps=document.querySelector('#fps'),hero=document.querySelector('#hero');
+const entries=new Map();let running=true,frame=0,elapsed=0,last=0,x=480,facing=1;
+for(const [id,name] of catalog){
+  hero.add(new Option(name,id));
+  const card=document.createElement('div');card.className='card';
+  const mini=document.createElement('canvas');mini.width=240;mini.height=260;mini.setAttribute('aria-label',name+'行走对照');card.append(mini);
+  const choose=document.createElement('button');choose.textContent=name;choose.onclick=()=>{hero.value=id;selectHero()};card.append(choose);
+  const link=document.createElement('a');link.href=`../src/assets/heroes/${id}-walk.png`;link.textContent='透明动作图';card.append(link);document.querySelector('#roster').append(card);
+  const image=new Image(),entry={id,name,image,loaded:false,error:false,mini,ctx:mini.getContext('2d')};entries.set(id,entry);
+  image.onload=()=>{entry.loaded=true;updateStatus()};
+  image.onerror=()=>{entry.error=true;updateStatus()};image.src=link.href;
+}
+function updateStatus(){
+  const e=entries.get(hero.value);if(!e)return;
+  const count=[...entries.values()].filter(v=>v.loaded).length;
+  document.querySelector('#status').textContent=e.loaded?`${e.name} · ${e.image.naturalWidth}×${e.image.naturalHeight} · 上排向左、下排向右，各四帧 · 已加载 ${count}/8 位`:(e.error?'图片未加载，请保留项目目录位置。':'正在加载图片……');
+}
+function selectHero(){
+  const e=entries.get(hero.value);frame=0;elapsed=0;x=480;
+  document.querySelector('#sheet-link').href=e.image.src;document.querySelector('#sheet').src=e.image.src;document.querySelector('#sheet').alt=e.name+'左右行走，两行四列';canvas.setAttribute('aria-label',e.name+'行走动画预览');updateStatus();
+}
+hero.onchange=selectHero;const requested=new URLSearchParams(location.search).get('hero');if(entries.has(requested))hero.value=requested;selectHero();
 play.onclick=()=>{running=!running;play.textContent=running?'暂停':'播放'};
 direction.onchange=()=>{facing=direction.value==='right'?1:-1;frame=0};
 fps.oninput=()=>document.querySelector('#rate').textContent=fps.value;
-image.onload=()=>{loaded=true;document.querySelector('#status').textContent=`已加载 ${image.naturalWidth}×${image.naturalHeight}，上排向左、下排向右，各四帧。`;};
-image.onerror=()=>{document.querySelector('#status').textContent='图片未加载，请保留预览页面与素材在项目中的目录位置。'};
-image.src='../src/assets/heroes/shen-yan-walk.png';
+function sprite(context,e,centerX,top,height){
+  // 生成图的个别装备超出名义格子，因此用逐帧范围取图，并以固定水平中心和脚底为锚点。
+  // 缩放始终基于名义格高512，不随每一帧的包围框变化，防止角色忽大忽小。
+  const row=facing>0?1:0,f=atlas.heroes[e.id].frames[row*4+frame],s=height/512;
+  const [sx,sy,sw,sh]=f.rect,[ox,oy]=f.origin;
+  context.drawImage(e.image,sx,sy,sw,sh,centerX-ox*s,top+height-oy*s,sw*s,sh*s);
+}
 function draw(now){
   const dt=last?Math.min((now-last)/1000,.05):0;last=now;
-  if(loaded){
+  if(entries.get(hero.value).loaded){
     if(running){elapsed+=dt;const period=1/Number(fps.value);while(elapsed>=period){frame=(frame+1)%4;elapsed-=period;}
       if(travel.checked){x+=facing*Number(fps.value)*16*dt;if(x>825){x=825;facing=-1}if(x<135){x=135;facing=1}direction.value=facing>0?'right':'left';}}
     ctx.clearRect(0,0,960,400);ctx.fillStyle='#b8c59b';ctx.fillRect(0,0,960,400);
     // 场景只提供地面参照；画面中的角色直接取自 PNG，没有用静态图左右摇晃代替迈步。
     ctx.fillStyle='#cbb38a';ctx.fillRect(0,300,960,70);ctx.strokeStyle='#a9926b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,370);ctx.lineTo(960,370);ctx.stroke();
-    const cw=image.naturalWidth/4,ch=image.naturalHeight/2,row=facing>0?1:0;
-    const dh=290,dw=cw/ch*dh;ctx.drawImage(image,frame*cw,row*ch,cw,ch,x-dw/2,70,dw,dh);
+    sprite(ctx,entries.get(hero.value),x,70,290);
     canvas.dataset.frame=String(frame);canvas.dataset.direction=direction.value;
+  }
+  // 对照区保持原地迈步，和大图共用方向、帧序与播放状态，方便检查差异。
+  for(const e of entries.values()){
+    e.ctx.clearRect(0,0,240,260);e.ctx.fillStyle='#b8c59b';e.ctx.fillRect(0,0,240,260);e.ctx.fillStyle='#cbb38a';e.ctx.fillRect(0,226,240,34);
+    if(e.loaded)sprite(e.ctx,e,120,0,238);
+    else{e.ctx.fillStyle='#403a30';e.ctx.fillText(e.error?'加载失败':'加载中',85,130)}
   }
   requestAnimationFrame(draw);
 }

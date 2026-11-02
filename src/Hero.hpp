@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Equipment.hpp"
+
 #include <SFML/Graphics.hpp>
 
 // Hero 类封装与英雄有关的数据和行为。
@@ -21,6 +23,14 @@ public:
     // 绘制目标标记和英雄。
     void draw(sf::RenderWindow& window) const;
 
+    // 换装只修改英雄状态；绘制时会自动采用对应外观。
+    void equipWeapon(Weapon newWeapon);
+    void equipArmor(Armor newArmor);
+    Weapon equippedWeapon() const;
+    Armor equippedArmor() const;
+    int attackPower() const;
+    int defense() const;
+
 private:
     // inline static constexpr 表示所有 Hero 对象共用同一份编译期常量。
     // 这些实现细节放在 private 中，外部代码不能随意修改。
@@ -38,4 +48,6 @@ private:
     sf::Vector2f targetPosition;
     bool selected{false};
     bool targetVisible{false};
+    Weapon weapon{Weapon::WoodenSword};
+    Armor armor{Armor::Cloth};
 };

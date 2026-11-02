@@ -91,7 +91,36 @@ void Hero::draw(sf::RenderWindow& window) const
     }
 
     window.draw(shape);
+
+    // 以英雄中心为基准绘制装备层，英雄移动时无需逐个更新装备坐标。
+    const sf::Vector2f center = shape.getPosition();
+    sf::RectangleShape chest({42.f, 28.f});
+    chest.setPosition(center + sf::Vector2f{-21.f, -7.f});
+    chest.setFillColor(armor == Armor::Steel ? sf::Color(165, 180, 195) : sf::Color(135, 105, 75));
+    window.draw(chest);
+
+    sf::RectangleShape helmet({42.f, 10.f});
+    helmet.setPosition(center + sf::Vector2f{-21.f, -25.f});
+    helmet.setFillColor(armor == Armor::Steel ? sf::Color(210, 220, 230) : sf::Color(165, 125, 85));
+    window.draw(helmet);
+
+    sf::RectangleShape blade({8.f, 36.f});
+    blade.setPosition(center + sf::Vector2f{32.f, -23.f});
+    blade.setFillColor(weapon == Weapon::SteelSword ? sf::Color(220, 230, 240) : sf::Color(145, 90, 45));
+    window.draw(blade);
+
+    sf::RectangleShape guard({22.f, 5.f});
+    guard.setPosition(center + sf::Vector2f{25.f, 10.f});
+    guard.setFillColor(weapon == Weapon::SteelSword ? sf::Color(230, 190, 75) : sf::Color(90, 60, 35));
+    window.draw(guard);
 }
+
+void Hero::equipWeapon(const Weapon newWeapon) { weapon = newWeapon; }
+void Hero::equipArmor(const Armor newArmor) { armor = newArmor; }
+Weapon Hero::equippedWeapon() const { return weapon; }
+Armor Hero::equippedArmor() const { return armor; }
+int Hero::attackPower() const { return 1 + weaponInfo(weapon).attackBonus; }
+int Hero::defense() const { return armorInfo(armor).defenseBonus; }
 
 bool Hero::contains(const sf::Vector2f point) const
 {

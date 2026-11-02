@@ -20,6 +20,8 @@ private:
     void processEvents();
     void update(float deltaTime);
     void render();
+    void drawEquipmentBar();
+    void updateWindowTitle();
 
     inline static constexpr sf::Vector2u windowSize{960, 540};
 

@@ -1,6 +1,7 @@
 #include "Game.hpp"
 
 #include <optional>
+#include <string>
 
 // 冒号后的"成员初始化列表"：在进入构造函数大括号前，
 // 按 Game.hpp 中成员声明的顺序依次创建 window、hero、monster。
@@ -15,6 +16,7 @@ Game::Game()
 {
     // 限制最高帧率 120 FPS：不限制的话游戏会满速空转，浪费 CPU/GPU。
     window.setFramerateLimit(120);
+    updateWindowTitle();
 }
 
 void Game::run()
@@ -64,6 +66,29 @@ void Game::processEvents()
             // 鼠标事件给的是窗口像素坐标，mapPixelToCoords 转成游戏世界坐标。
             // 具体如何处理这次点击，Hero 自己负责，Game 不关心细节。
             const sf::Vector2f mousePosition = window.mapPixelToCoords(mousePressed->position);
+
+            // 顶部四个装备格先于场景处理，点击装备不会误触发英雄移动。
+            constexpr float buttonY = 20.f;
+            constexpr float buttonSize = 44.f;
+            const float buttonX[] = {20.f, 75.f, 150.f, 205.f};
+            bool clickedEquipment = false;
+            for (int index = 0; index < 4; ++index)
+            {
+                if (!sf::FloatRect({buttonX[index], buttonY}, {buttonSize, buttonSize}).contains(mousePosition))
+                    continue;
+
+                if (index < 2)
+                    hero.equipWeapon(index == 0 ? Weapon::WoodenSword : Weapon::SteelSword);
+                else
+                    hero.equipArmor(index == 2 ? Armor::Cloth : Armor::Steel);
+
+                updateWindowTitle();
+                clickedEquipment = true;
+                break;
+            }
+            if (clickedEquipment)
+                continue;
+
             hero.handleLeftClick(mousePosition, windowSize);
         }
     }
@@ -86,8 +111,44 @@ void Game::render()
     // 所以先画怪物、再画英雄，英雄会盖在怪物上面。
     monster.draw(window);
     hero.draw(window);
+    drawEquipmentBar();
 
     // display 把这一帧绘制的内容一次性真正显示到屏幕。
     // 之前所有 draw 只是画到后台缓冲，display 才"亮出来"。
     window.display();
+}
+
+void Game::drawEquipmentBar()
+{
+    // 两格武器、两格护甲；金色边框表示当前穿戴的装备。
+    const float buttonX[] = {20.f, 75.f, 150.f, 205.f};
+    const sf::Color equipmentColors[] = {
+        sf::Color(145, 90, 45), sf::Color(220, 230, 240),
+        sf::Color(135, 105, 75), sf::Color(165, 180, 195)};
+    for (int index = 0; index < 4; ++index)
+    {
+        sf::RectangleShape button({44.f, 44.f});
+        button.setPosition({buttonX[index], 20.f});
+        button.setFillColor(sf::Color(65, 70, 80));
+        button.setOutlineThickness(3.f);
+        const bool active = index < 2
+            ? hero.equippedWeapon() == (index == 0 ? Weapon::WoodenSword : Weapon::SteelSword)
+            : hero.equippedArmor() == (index == 2 ? Armor::Cloth : Armor::Steel);
+        button.setOutlineColor(active ? sf::Color(245, 195, 70) : sf::Color(105, 110, 120));
+        window.draw(button);
+
+        sf::RectangleShape icon(index < 2 ? sf::Vector2f{8.f, 28.f} : sf::Vector2f{28.f, 24.f});
+        icon.setPosition({buttonX[index] + (index < 2 ? 18.f : 8.f), index < 2 ? 28.f : 30.f});
+        icon.setFillColor(equipmentColors[index]);
+        window.draw(icon);
+    }
+}
+
+void Game::updateWindowTitle()
+{
+    // 不依赖字体资源，窗口标题直接显示装备名称与当前数值。
+    window.setTitle(std::string("Pocket Heroes | Weapon: ") + weaponInfo(hero.equippedWeapon()).name +
+                    " | Armor: " + armorInfo(hero.equippedArmor()).name +
+                    " | ATK: " + std::to_string(hero.attackPower()) +
+                    " DEF: " + std::to_string(hero.defense()));
 }

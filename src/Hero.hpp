@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Equipment.hpp"
+#include "WalkAtlas.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -30,6 +31,7 @@ public:
     Armor equippedArmor() const;
     int attackPower() const;
     int defense() const;
+    void selectAppearance(std::size_t index, const sf::Texture* texture);
 
 private:
     // inline static constexpr 表示所有 Hero 对象共用同一份编译期常量。
@@ -50,4 +52,8 @@ private:
     bool targetVisible{false};
     Weapon weapon{Weapon::WoodenSword};
     Armor armor{Armor::Cloth};
+    std::size_t appearanceIndex{0};
+    const sf::Texture* walkTexture{nullptr};
+    float walkTime{0.f};
+    bool facingRight{true};
 };

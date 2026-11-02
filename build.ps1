@@ -73,4 +73,11 @@ if ($LASTEXITCODE -ne 0) {
     }
 }
 
+# 运行时从 build/assets/heroes 读取动作图；复制选角必需的八张素材。
+$heroAssetDirectory = Join-Path $buildDirectory "assets\heroes"
+New-Item -ItemType Directory -Force -Path $heroAssetDirectory | Out-Null
+Get-ChildItem (Join-Path $PSScriptRoot "src\assets\heroes") -Filter "*-walk.png" | ForEach-Object {
+    Copy-Item -Force $_.FullName $heroAssetDirectory
+}
+
 Write-Host "Build succeeded: $buildDirectory\PocketHeroes.exe" -ForegroundColor Green

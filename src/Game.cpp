@@ -1,6 +1,7 @@
 #include "Game.hpp"
 
 #include <optional>
+#include <filesystem>
 #include <string>
 
 // 冒号后的"成员初始化列表"：在进入构造函数大括号前，
@@ -16,6 +17,13 @@ Game::Game()
 {
     // 限制最高帧率 120 FPS：不限制的话游戏会满速空转，浪费 CPU/GPU。
     window.setFramerateLimit(120);
+    // 先尝试从可执行文件所在的 build 目录找素材，再兼容项目根目录启动。
+    std::filesystem::path assetDirectory = "assets/heroes";
+    if (!std::filesystem::exists(assetDirectory))
+        assetDirectory = "build/assets/heroes";
+    for (std::size_t index = 0; index < heroWalkArts.size(); ++index)
+        heroTextureReady[index] = heroTextures[index].loadFromFile(assetDirectory / heroWalkArts[index].file);
+    hero.selectAppearance(0, heroTextureReady[0] ? &heroTextures[0] : nullptr);
     updateWindowTitle();
 }
 
@@ -67,6 +75,22 @@ void Game::processEvents()
             // 具体如何处理这次点击，Hero 自己负责，Game 不关心细节。
             const sf::Vector2f mousePosition = window.mapPixelToCoords(mousePressed->position);
 
+            // 底部八个头像格只切换角色，不向场景发出移动指令。
+            if (mousePosition.y >= 445.f)
+            {
+                for (std::size_t index = 0; index < heroWalkArts.size(); ++index)
+                {
+                    if (sf::FloatRect({20.f + index * 115.f, 449.f}, {94.f, 76.f}).contains(mousePosition))
+                    {
+                        selectedHero = index;
+                        hero.selectAppearance(index, heroTextureReady[index] ? &heroTextures[index] : nullptr);
+                        updateWindowTitle();
+                        break;
+                    }
+                }
+                continue;
+            }
+
             // 顶部四个装备格先于场景处理，点击装备不会误触发英雄移动。
             constexpr float buttonY = 20.f;
             constexpr float buttonSize = 44.f;
@@ -112,6 +136,7 @@ void Game::render()
     monster.draw(window);
     hero.draw(window);
     drawEquipmentBar();
+    drawHeroRoster();
 
     // display 把这一帧绘制的内容一次性真正显示到屏幕。
     // 之前所有 draw 只是画到后台缓冲，display 才"亮出来"。
@@ -147,8 +172,32 @@ void Game::drawEquipmentBar()
 void Game::updateWindowTitle()
 {
     // 不依赖字体资源，窗口标题直接显示装备名称与当前数值。
-    window.setTitle(std::string("Pocket Heroes | Weapon: ") + weaponInfo(hero.equippedWeapon()).name +
+    window.setTitle(std::string("Pocket Heroes | Hero: ") + heroWalkArts[selectedHero].name +
+                    " | Weapon: " + weaponInfo(hero.equippedWeapon()).name +
                     " | Armor: " + armorInfo(hero.equippedArmor()).name +
                     " | ATK: " + std::to_string(hero.attackPower()) +
                     " DEF: " + std::to_string(hero.defense()));
+}
+
+void Game::drawHeroRoster()
+{
+    // 每格使用同一张动作图的右行第一帧；金边表示当前正在预览的英雄。
+    for (std::size_t index = 0; index < heroWalkArts.size(); ++index)
+    {
+        const float left = 20.f + index * 115.f;
+        sf::RectangleShape button({94.f, 76.f});
+        button.setPosition({left, 449.f});
+        button.setFillColor(sf::Color(55, 60, 70));
+        button.setOutlineThickness(3.f);
+        button.setOutlineColor(index == selectedHero ? sf::Color(245, 195, 70) : sf::Color(105, 110, 120));
+        window.draw(button);
+        if (!heroTextureReady[index])
+            continue;
+        const WalkFrame& frame = heroWalkArts[index].frames[4];
+        sf::Sprite sprite(heroTextures[index], sf::IntRect({frame.x, frame.y}, {frame.width, frame.height}));
+        sprite.setOrigin({static_cast<float>(frame.originX), static_cast<float>(frame.originY)});
+        sprite.setScale({0.14f, 0.14f});
+        sprite.setPosition({left + 47.f, 518.f});
+        window.draw(sprite);
+    }
 }

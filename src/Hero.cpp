@@ -52,6 +52,8 @@ void Hero::handleLeftClick(const sf::Vector2f mousePosition, const sf::Vector2u 
 
 void Hero::update(const float deltaTime)
 {
+    // 预览模式下原地也循环播放四帧，便于逐个观察英雄的步态。
+    walkTime += deltaTime;
     // offset = 目标位置 − 当前位置：从英雄指向目标的向量（有方向、有长度）。
     const sf::Vector2f offset = targetPosition - shape.getPosition();
     // 勾股定理求向量长度 = 英雄到目标的直线距离。
@@ -90,10 +92,35 @@ void Hero::draw(sf::RenderWindow& window) const
         window.draw(targetMarker);
     }
 
-    window.draw(shape);
+    if (walkTexture)
+    {
+        const int frameNumber = static_cast<int>(walkTime * 6.f) % 4;
+        const WalkFrame& frame = heroWalkArts[appearanceIndex].frames[(facingRight ? 4 : 0) + frameNumber];
+        sf::Sprite sprite(*walkTexture, sf::IntRect({frame.x, frame.y}, {frame.width, frame.height}));
+        sprite.setOrigin({static_cast<float>(frame.originX), static_cast<float>(frame.originY)});
+        sprite.setScale({0.4f, 0.4f});
+        sprite.setPosition(shape.getPosition());
+        window.draw(sprite);
+    }
+    else
+    {
+        window.draw(shape);
+    }
 
-    // 以英雄中心为基准绘制装备层，英雄移动时无需逐个更新装备坐标。
+    // 当前动作图已画有角色本身的装备；保留原型的装备色块作为换装状态提示。
     const sf::Vector2f center = shape.getPosition();
+    if (walkTexture)
+    {
+        sf::RectangleShape weaponBadge({12.f, 12.f});
+        weaponBadge.setPosition(center + sf::Vector2f{-15.f, 3.f});
+        weaponBadge.setFillColor(weapon == Weapon::SteelSword ? sf::Color(220, 230, 240) : sf::Color(145, 90, 45));
+        window.draw(weaponBadge);
+        sf::RectangleShape armorBadge({12.f, 12.f});
+        armorBadge.setPosition(center + sf::Vector2f{3.f, 3.f});
+        armorBadge.setFillColor(armor == Armor::Steel ? sf::Color(165, 180, 195) : sf::Color(135, 105, 75));
+        window.draw(armorBadge);
+        return;
+    }
     sf::RectangleShape chest({42.f, 28.f});
     chest.setPosition(center + sf::Vector2f{-21.f, -7.f});
     chest.setFillColor(armor == Armor::Steel ? sf::Color(165, 180, 195) : sf::Color(135, 105, 75));
@@ -122,8 +149,24 @@ Armor Hero::equippedArmor() const { return armor; }
 int Hero::attackPower() const { return 1 + weaponInfo(weapon).attackBonus; }
 int Hero::defense() const { return armorInfo(armor).defenseBonus; }
 
+void Hero::selectAppearance(const std::size_t index, const sf::Texture* texture)
+{
+    appearanceIndex = index;
+    walkTexture = texture;
+    walkTime = 0.f;
+}
+
 bool Hero::contains(const sf::Vector2f point) const
 {
+    if (walkTexture)
+    {
+        const WalkFrame& frame = heroWalkArts[appearanceIndex].frames[facingRight ? 4 : 0];
+        sf::Sprite sprite(*walkTexture, sf::IntRect({frame.x, frame.y}, {frame.width, frame.height}));
+        sprite.setOrigin({static_cast<float>(frame.originX), static_cast<float>(frame.originY)});
+        sprite.setScale({0.4f, 0.4f});
+        sprite.setPosition(shape.getPosition());
+        return sprite.getGlobalBounds().contains(point);
+    }
     // shape.getGlobalBounds() 返回一个 sf::FloatRect 对象（英雄的包围矩形）。
     // 函数返回值是类对象，所以可以继续用 . 调用它的成员函数，
     // .contains(point) 判断"point 是否落在矩形内部"，返回 bool。
@@ -135,6 +178,7 @@ bool Hero::contains(const sf::Vector2f point) const
 
 void Hero::setMoveTarget(const sf::Vector2f position, const sf::Vector2u worldSize)
 {
+    facingRight = position.x >= shape.getPosition().x;
     // 半宽/半高 = 英雄中心到边缘的距离，用作边界限制值。
     const float halfWidth = size.x / 2.f;
     const float halfHeight = size.y / 2.f;
